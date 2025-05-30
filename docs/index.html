@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en-us">
   <head>
@@ -91,10 +92,26 @@
 
           window.unityInstance = unityInstance;
 
+          setTimeout(() => startOrientationTracking(), 1000);
+
+          let lastUpdate = 0;
+          function handleOrientation(event) {
+            const now = Date.now();
+            if (now - lastUpdate < 100) return;
+            lastUpdate = now;
+
+            const alpha = event.alpha || 0;
+            const beta = event.beta || 0;
+            const gamma = event.gamma || 0;
+
+            if (unityInstance && typeof unityInstance.SendMessage === "function") {
+              unityInstance.SendMessage("GyroReceiver", "UpdateOrientation", `${alpha}|${beta}|${gamma}`);
+            }
+          }
+
           function startOrientationTracking() {
             if (typeof(DeviceOrientationEvent) !== "undefined" &&
                 typeof(DeviceOrientationEvent.requestPermission) === "function") {
-              // iOS
               DeviceOrientationEvent.requestPermission().then(response => {
                 if (response === "granted") {
                   window.addEventListener("deviceorientation", handleOrientation);
@@ -106,19 +123,9 @@
                 document.getElementById("gyro-error").style.display = "block";
               });
             } else {
-              // Android
               window.addEventListener("deviceorientation", handleOrientation);
             }
           }
-
-          function handleOrientation(event) {
-            const alpha = event.alpha || 0;
-            const beta = event.beta || 0;
-            const gamma = event.gamma || 0;
-            unityInstance.SendMessage("GyroReceiver", "UpdateOrientation", `${alpha}|${beta}|${gamma}`);
-          }
-
-          startOrientationTracking();
         }).catch((message) => {
           alert(message);
         });
