@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en-us">
   <head>
@@ -116,7 +115,11 @@
             if (now - lastUpdate < 100) return;
             lastUpdate = now;
 
-            const alpha = event.alpha || 0;
+            const rawAlpha = event.alpha || 0;
+            const screenAngle = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
+            const adjustedAlpha = (rawAlpha + screenAngle) % 360;
+            const alpha = (360 - adjustedAlpha) % 360;
+
             const beta = event.beta || 0;
             const gamma = event.gamma || 0;
 
