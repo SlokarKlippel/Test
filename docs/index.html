@@ -23,6 +23,11 @@
         <div id="unity-build-title">TestCastra</div>
       </div>
     </div>
+
+    <div id="gyro-error" style="display:none; position: absolute; top: 10px; left: 10px; background: #fdd; padding: 10px; z-index: 1000;">
+      Dostop do senzorjev zavrnjen. Prosimo, omogočite gibanje naprave v nastavitvah brskalnika.
+    </div>
+
     <script>
       var canvas = document.querySelector("#unity-canvas");
 
@@ -79,38 +84,41 @@
         createUnityInstance(canvas, config, (progress) => {
           document.querySelector("#unity-progress-bar-full").style.width = 100 * progress + "%";
         }).then((unityInstance) => {
-        window.unityInstance = unityInstance;
-
-        // === BEGIN: DeviceOrientation for gyroscope ===
-        function startOrientationTracking() {
-          if (typeof(DeviceOrientationEvent) !== "undefined" &&
-              typeof(DeviceOrientationEvent.requestPermission) === "function") {
-            // iOS
-            DeviceOrientationEvent.requestPermission().then(response => {
-              if (response === "granted") {
-                window.addEventListener("deviceorientation", handleOrientation);
-              }
-            }).catch(console.error);
-          } else {
-            // Android
-            window.addEventListener("deviceorientation", handleOrientation);
-          }
-        }
-
-        function handleOrientation(event) {
-          const alpha = event.alpha || 0;
-          const beta = event.beta || 0;
-          const gamma = event.gamma || 0;
-          unityInstance.SendMessage("GyroReceiver", "UpdateOrientation", `${alpha}|${beta}|${gamma}`);
-        }
-
-        startOrientationTracking();
-        // === END: DeviceOrientation ===
-
           document.querySelector("#unity-loading-bar").style.display = "none";
           document.querySelector("#unity-fullscreen-button").onclick = () => {
             unityInstance.SetFullscreen(1);
           };
+
+          window.unityInstance = unityInstance;
+
+          function startOrientationTracking() {
+            if (typeof(DeviceOrientationEvent) !== "undefined" &&
+                typeof(DeviceOrientationEvent.requestPermission) === "function") {
+              // iOS
+              DeviceOrientationEvent.requestPermission().then(response => {
+                if (response === "granted") {
+                  window.addEventListener("deviceorientation", handleOrientation);
+                } else {
+                  document.getElementById("gyro-error").style.display = "block";
+                }
+              }).catch((error) => {
+                console.error("Napaka pri zahtevi za senzorje:", error);
+                document.getElementById("gyro-error").style.display = "block";
+              });
+            } else {
+              // Android
+              window.addEventListener("deviceorientation", handleOrientation);
+            }
+          }
+
+          function handleOrientation(event) {
+            const alpha = event.alpha || 0;
+            const beta = event.beta || 0;
+            const gamma = event.gamma || 0;
+            unityInstance.SendMessage("GyroReceiver", "UpdateOrientation", `${alpha}|${beta}|${gamma}`);
+          }
+
+          startOrientationTracking();
         }).catch((message) => {
           alert(message);
         });
